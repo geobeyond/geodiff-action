@@ -1,31 +1,32 @@
 # GeoDiff Action
 
-A GitHub Action for comparing geospatial files and detecting differences.
+A GitHub Action for comparing GeoPackage and SQLite database files using [pygeodiff](https://github.com/MerginMaps/geodiff).
 
 ## Features
 
-- Compare geospatial files (GeoJSON, Shapefile, GeoPackage, etc.)
-- Output diff results in multiple formats (JSON, GeoJSON, summary)
-- Detect added, removed, and modified features
-- Generate job summaries with visual diff reports
+- Compare GeoPackage (.gpkg) and SQLite (.sqlite, .db) files
+- Detect inserted, updated, and deleted records
+- Output diff results in JSON or summary format
+- Generate job summaries with detailed change reports
+- Uses the powerful [pygeodiff](https://pypi.org/project/pygeodiff/) library from Mergin Maps
 
 ## Usage
 
 ```yaml
-- uses: your-username/geodiff-action@v1
+- uses: francbartoli/geodiff-action@v1
   with:
-    base_file: 'path/to/base.geojson'
-    compare_file: 'path/to/compare.geojson'
-    output_format: 'geojson'
+    base_file: 'path/to/base.gpkg'
+    compare_file: 'path/to/compare.gpkg'
+    output_format: 'json'
 ```
 
 ## Inputs
 
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
-| `base_file` | Path to the base geospatial file | Yes | - |
+| `base_file` | Path to the base GeoPackage/SQLite file | Yes | - |
 | `compare_file` | Path to the file to compare against base | Yes | - |
-| `output_format` | Output format for the diff result (json, geojson, summary) | No | `geojson` |
+| `output_format` | Output format for the diff result (json, summary) | No | `json` |
 | `summary` | Add Summary to Job | No | `true` |
 | `token` | GitHub Token | No | `${{ github.token }}` |
 
@@ -39,12 +40,11 @@ A GitHub Action for comparing geospatial files and detecting differences.
 ## Example Workflow
 
 ```yaml
-name: Geo Diff Check
+name: GeoPackage Diff Check
 
 on:
   pull_request:
     paths:
-      - '**.geojson'
       - '**.gpkg'
 
 jobs:
@@ -55,26 +55,68 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get changed files
-        id: changed
-        uses: tj-actions/changed-files@v44
-        with:
-          files: |
-            **.geojson
-            **.gpkg
+      - name: Get base file from main branch
+        run: |
+          git show origin/main:data/spatial.gpkg > base.gpkg
 
       - name: Run GeoDiff
-        if: steps.changed.outputs.any_changed == 'true'
-        uses: your-username/geodiff-action@v1
+        id: geodiff
+        uses: francbartoli/geodiff-action@v1
         with:
-          base_file: ${{ steps.changed.outputs.all_changed_files }}
-          compare_file: ${{ steps.changed.outputs.all_changed_files }}
+          base_file: 'base.gpkg'
+          compare_file: 'data/spatial.gpkg'
           output_format: 'summary'
+
+      - name: Check for changes
+        if: steps.geodiff.outputs.has_changes == 'true'
+        run: |
+          echo "Changes detected in GeoPackage!"
+          echo "${{ steps.geodiff.outputs.diff_result }}"
 ```
+
+## Output Format
+
+### JSON Output
+
+```json
+{
+  "base_file": "base.gpkg",
+  "compare_file": "compare.gpkg",
+  "has_changes": true,
+  "summary": {
+    "total_changes": 5,
+    "inserts": 2,
+    "updates": 2,
+    "deletes": 1
+  },
+  "changes": {
+    "geodiff": [...]
+  }
+}
+```
+
+### Summary Output
+
+```
+GeoDiff Summary: base.gpkg vs compare.gpkg
+  Has Changes:   Yes
+  Total Changes: 5
+  Inserts:       2
+  Updates:       2
+  Deletes:       1
+
+  Tables affected:
+    - my_layer: 5 change(s)
+```
+
+## Supported File Formats
+
+- GeoPackage (`.gpkg`)
+- SQLite (`.sqlite`, `.db`)
 
 ## Development
 
-This action is built using Python and UV package manager.
+This action is built using Python and UV package manager with [pygeodiff](https://github.com/MerginMaps/geodiff).
 
 ### Prerequisites
 
@@ -85,14 +127,17 @@ This action is built using Python and UV package manager.
 
 ```bash
 # Install dependencies
-uv sync
+uv sync --group test
 
 # Run linters
-uv run ruff check src/
-uv run black --check src/
+uv run ruff check src/ tests/
+uv run ruff format --check src/ tests/
 
-# Run the action locally
-uv run python src/main.py
+# Run tests
+uv run pytest -v
+
+# Run tests with coverage
+uv run pytest --cov=src --cov-report=term-missing
 ```
 
 ## License
@@ -102,3 +147,8 @@ MIT License - see [LICENSE](LICENSE) for details.
 ## Contributing
 
 Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## Acknowledgements
+
+- [pygeodiff](https://github.com/MerginMaps/geodiff) - The underlying library for geospatial diff operations
+- [Mergin Maps](https://merginmaps.com/) - Creators of the geodiff library

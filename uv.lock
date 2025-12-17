@@ -475,6 +475,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "actions-tools", extra = ["github"] },
+    { name = "pygeodiff" },
 ]
 
 [package.dev-dependencies]
@@ -499,7 +500,10 @@ test = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "actions-tools", extras = ["github"] }]
+requires-dist = [
+    { name = "actions-tools", extras = ["github"] },
+    { name = "pygeodiff", specifier = ">=2.0.0" },
+]
 
 [package.metadata.requires-dev]
 dev = [
@@ -694,6 +698,53 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/45/dc/fd034dc20b4b264b3d015808458391acbf9df40b1e54750ef175d39180b1/pyflakes-3.4.0.tar.gz", hash = "sha256:b24f96fafb7d2ab0ec5075b7350b3d2d2218eab42003821c06344973d3ea2f58", size = 64669, upload-time = "2025-06-20T18:45:27.834Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c2/2f/81d580a0fb83baeb066698975cb14a618bdbed7720678566f1b046a95fe8/pyflakes-3.4.0-py2.py3-none-any.whl", hash = "sha256:f742a7dbd0d9cb9ea41e9a24a918996e8170c799fa528688d40dd582c8265f4f", size = 63551, upload-time = "2025-06-20T18:45:26.937Z" },
+]
+
+[[package]]
+name = "pygeodiff"
+version = "2.0.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b8/f9/41137a11e4051673a34a5f37b2d0eefaba1748fc7525be442a356f2b747e/pygeodiff-2.0.4.tar.gz", hash = "sha256:b798f61c4454af5d55f5736c563b56fabef532e13bcf2c4736a38ceae0af3b73", size = 205051, upload-time = "2024-09-12T11:39:21.659Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b6/3e/ba56c62f2dcbea885ff7dddbbf1820c77b9af96dfa18ce0e4156e53e5256/pygeodiff-2.0.4-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:e75df8f650a03b574cddcaccc6169e2b463e79da07bccf36d7c425155f707841", size = 1160739, upload-time = "2024-09-12T11:37:16.717Z" },
+    { url = "https://files.pythonhosted.org/packages/fa/d3/a5ccaaf02c2fed191ee1fb7c3a320c46c1399cb836a8830b4a1a0c1ca25f/pygeodiff-2.0.4-cp310-cp310-macosx_14_0_arm64.whl", hash = "sha256:60f53dc9cca614d3dd51b598f56b1fa2c2ffd5cf681f65fcd33b0074ecabd2f7", size = 1049291, upload-time = "2024-09-12T11:37:18.965Z" },
+    { url = "https://files.pythonhosted.org/packages/4b/83/ccf68e6088c187ff239436041b664f02fa5889709be6067b77e232a364d6/pygeodiff-2.0.4-cp310-cp310-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:959adaa448a1f877cdf30fb1d8f1dd695026e89edbdf31efd0a61345d203c571", size = 1157115, upload-time = "2024-09-12T11:37:20.522Z" },
+    { url = "https://files.pythonhosted.org/packages/79/c7/becf087dce4ead96eb7a4c94b0e1c35c2a5405cc9f55d66b85a6c99fa128/pygeodiff-2.0.4-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:248594db437bfa493fa0a4d9e7ceb2de66ea3e0154fb134ab81e46748d574167", size = 1064493, upload-time = "2024-09-12T11:37:22.275Z" },
+    { url = "https://files.pythonhosted.org/packages/c3/3d/1317bd9a5984dadd58588958c1592df233316ecdaf96113758bc53f8aee4/pygeodiff-2.0.4-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:5ae1786b379d58d2580fd0bdb98fb35c86fd8838a266239c179097685aab4857", size = 1041119, upload-time = "2024-09-12T11:37:24.649Z" },
+    { url = "https://files.pythonhosted.org/packages/40/1e/5681e2785e468e1d39baaf9c5b3585311d3a45f2a68b0a520ad9cc1b3b42/pygeodiff-2.0.4-cp310-cp310-musllinux_1_2_i686.whl", hash = "sha256:cf98bc71ff2211d18dbbdff49bde085345c41352390b3d284a6059149c903bdc", size = 2222868, upload-time = "2024-09-12T11:37:26.166Z" },
+    { url = "https://files.pythonhosted.org/packages/05/15/698a3225c1f2beabe509c132946e4612eac3e2b1fb87a3f5624c2523f045/pygeodiff-2.0.4-cp310-cp310-musllinux_1_2_x86_64.whl", hash = "sha256:42d04d40b2e90c2d12ee071dd89d927d1671657d37ba66bafbf885ad9e5536e9", size = 2035466, upload-time = "2024-09-12T11:37:27.535Z" },
+    { url = "https://files.pythonhosted.org/packages/d2/fa/c7185dc4b4abf20a2bbdfd2fad6bf1bdd49ccc119c3a4943cc68fe7b94f8/pygeodiff-2.0.4-cp310-cp310-win32.whl", hash = "sha256:146861aaf06f4ffcb4ed8528c25dc974a31dd939cdce27993e6074dc261a0a67", size = 926988, upload-time = "2024-09-12T11:37:29.749Z" },
+    { url = "https://files.pythonhosted.org/packages/37/ee/32df2e8b9f03be1f10ac1153ddd88a26d5d6b0fd10f227c277e192658498/pygeodiff-2.0.4-cp310-cp310-win_amd64.whl", hash = "sha256:7e2e77fc1648e8ff7489f47208c8786893309327cbec100f3425b091149101e1", size = 1128310, upload-time = "2024-09-12T11:37:31.73Z" },
+    { url = "https://files.pythonhosted.org/packages/c9/0c/0a84e5d84bfea715606f457861e73c9b59f83c732882359b27c7f3a453a2/pygeodiff-2.0.4-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:431715de655cff46a8dd9942cc0c240aaa632d49717d9ee480fc5b9c2082be70", size = 1160740, upload-time = "2024-09-12T11:37:33.259Z" },
+    { url = "https://files.pythonhosted.org/packages/16/3d/ccc3920b919d9937cc13f38e9cf6359c8c33e07b8d55d946516e153bdc06/pygeodiff-2.0.4-cp311-cp311-macosx_14_0_arm64.whl", hash = "sha256:7db494648a2fe881a21a9e1238ff229d84be53fa8d675feeb1969e4b307f59de", size = 1049290, upload-time = "2024-09-12T11:37:34.93Z" },
+    { url = "https://files.pythonhosted.org/packages/48/68/b960d03401b0a7524b36f4be4f68e61a1ffaafb9a0910bef8c170fb4676e/pygeodiff-2.0.4-cp311-cp311-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:356e63898e0363610ac6215e8108dfbdec0e7a70fd140209953cbea69d85d036", size = 1157116, upload-time = "2024-09-12T11:37:36.338Z" },
+    { url = "https://files.pythonhosted.org/packages/a0/2e/7b4b40b9ec0ca8ddd3c64bb41d0d5ff63a46b40205e59c974a2a4e0b4575/pygeodiff-2.0.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3a2ab3265919056c4797b818f446f5d29715df37887968b4442b2d660f0efa54", size = 1064494, upload-time = "2024-09-12T11:37:37.675Z" },
+    { url = "https://files.pythonhosted.org/packages/be/a8/4fbf7b57cf3d3bb806ef32419b39e735e63c1f762f0e16963337c5c6fa9c/pygeodiff-2.0.4-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:aa13189a33ea5e7446aee7ef4689d085772f28445c361eaa252aa541e9d093fe", size = 1041120, upload-time = "2024-09-12T11:37:39.896Z" },
+    { url = "https://files.pythonhosted.org/packages/a9/ed/05ae1d621f0cca1ad648abe9c6579522136ae17df3173587cb3e8afb1f62/pygeodiff-2.0.4-cp311-cp311-musllinux_1_2_i686.whl", hash = "sha256:59add7f0f5c96ca1a656ea058289f2159b85d3875f14a178539fe073105f3430", size = 2222869, upload-time = "2024-09-12T11:37:41.344Z" },
+    { url = "https://files.pythonhosted.org/packages/4f/d4/f34aec809584789df3337879251f347842189015516c9a3e2febab85c52d/pygeodiff-2.0.4-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:89a378296d52f5050124c4d744b12a540e91d5e6783d9d0119dc76dddb21ae4c", size = 2035465, upload-time = "2024-09-12T11:37:43.288Z" },
+    { url = "https://files.pythonhosted.org/packages/7d/80/e6ef0490df36041b48cd15e298cb7d33e444e1bd193ce962e934b061a6df/pygeodiff-2.0.4-cp311-cp311-win32.whl", hash = "sha256:08b6b0a145860aab95e150541927256448da8ca69106d3ef67cb7020371df1f1", size = 926989, upload-time = "2024-09-12T11:37:44.649Z" },
+    { url = "https://files.pythonhosted.org/packages/15/88/82da2389204dfef39961244e5b51537057f00c17f1c8ea07641110a1b535/pygeodiff-2.0.4-cp311-cp311-win_amd64.whl", hash = "sha256:04f27baa334cba5f0f7d8edaad8fab199a246a84864f704c61d6143623214331", size = 1128309, upload-time = "2024-09-12T11:37:46.806Z" },
+    { url = "https://files.pythonhosted.org/packages/be/08/040c29944510913664490eede5e97db029dfcef6f0ac929dd8bf7b404a95/pygeodiff-2.0.4-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:382dbb3168792f97b8ae6582273bb3159f4c526161978f26f3ea87fb5209c3c5", size = 1160739, upload-time = "2024-09-12T11:37:48.789Z" },
+    { url = "https://files.pythonhosted.org/packages/b5/de/89426e598b00b82b3c4bb93644dd5efd0cb7883bb86207d280cfe070227a/pygeodiff-2.0.4-cp312-cp312-macosx_14_0_arm64.whl", hash = "sha256:b65d4e0bcea314015a859877e7a54db8209f19b6f52e946870272d985f94e601", size = 1049290, upload-time = "2024-09-12T11:37:50.162Z" },
+    { url = "https://files.pythonhosted.org/packages/99/ea/f100bd72d55588bc410a1ad90116cc51ad5fb60eac25934ae2532b34d324/pygeodiff-2.0.4-cp312-cp312-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:3683a3122b565a97337426b00e25ce909c25649d1dabba2307865770e0dffd15", size = 1157114, upload-time = "2024-09-12T11:37:52.172Z" },
+    { url = "https://files.pythonhosted.org/packages/2b/d5/02e97ba4360b82134b1a663c344e70662644007c7bd40a4e94211c94cb02/pygeodiff-2.0.4-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1adc646c5ef537048ed8f8852c3bd4c3ec9e039267aafd3e7520f27dad7660c4", size = 1064493, upload-time = "2024-09-12T11:37:53.649Z" },
+    { url = "https://files.pythonhosted.org/packages/97/ae/729714374bbd688cbdf91975f1f9850b00e3596ae92a5e31b10696ca70ef/pygeodiff-2.0.4-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:42d4d94624fb62a3f4b53596f334c9f3c86babba2babcfcce0083a743dfbfad9", size = 1041119, upload-time = "2024-09-12T11:37:56.341Z" },
+    { url = "https://files.pythonhosted.org/packages/c0/e6/87308962ebdb2360f8bb1253cf1c2e1d859c530f610c103533eedb9c39cf/pygeodiff-2.0.4-cp312-cp312-musllinux_1_2_i686.whl", hash = "sha256:ae06750925fd477851af14d664ae4b029e51c6387f6a3dcfdd36c069307a4e9e", size = 2222869, upload-time = "2024-09-12T11:37:57.93Z" },
+    { url = "https://files.pythonhosted.org/packages/10/f5/a8d2e2dfe4bb336d56f903268b64ea78fab23322121c7dd8fe387d68d845/pygeodiff-2.0.4-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:9764c1b0110a42cc10a1879ac340fd9fe677721c41d2eac65a2e88b079e8979a", size = 2035465, upload-time = "2024-09-12T11:38:00.01Z" },
+    { url = "https://files.pythonhosted.org/packages/f4/ba/e40a35240936918d26a6ab7f67f6638cbca32109521be37661aba312e176/pygeodiff-2.0.4-cp312-cp312-win32.whl", hash = "sha256:401311c95fec169a67633b3dafa7059f7647e67de226ed89169ff8e0ff939efe", size = 926984, upload-time = "2024-09-12T11:38:01.369Z" },
+    { url = "https://files.pythonhosted.org/packages/c0/0e/c7bc1616a55468ef1c667aa25e9f848558c5109b7dd59d33b93dbaaca15a/pygeodiff-2.0.4-cp312-cp312-win_amd64.whl", hash = "sha256:b67c0fd0ed68e244c2820b56e74095518e0d4a9fe571c3854978e28ae03c8d93", size = 1128309, upload-time = "2024-09-12T11:38:02.793Z" },
+    { url = "https://files.pythonhosted.org/packages/97/f1/b62c916538f0db029e1171e0fd367ab7e559033127eb2dd45d765c014aa9/pygeodiff-2.0.4-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:c4fd9516f12a924b077934418df634d4a06ed8d7f7ebd5284eb8365e972efd6a", size = 1157694, upload-time = "2024-09-12T11:38:04.744Z" },
+    { url = "https://files.pythonhosted.org/packages/4a/b7/79b96d40237a1368d158a2e80ab0ed8e79f099e74ba54067cd5bddde68a7/pygeodiff-2.0.4-cp313-cp313-macosx_14_0_arm64.whl", hash = "sha256:8b7168f95393140f9d6a9bb92298934e6f276b02d333cc8f420b57876e4234f8", size = 1049289, upload-time = "2024-09-12T11:38:06.835Z" },
+    { url = "https://files.pythonhosted.org/packages/96/6e/ab752fd6d4ddfbc41c32556c08dbcfee6e63ab8f77b582fd84a30cdfa360/pygeodiff-2.0.4-cp313-cp313-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:6f674e2e56ca6a95c39dfe97f9449659439ead9b61db1fdd8f1b090162ebeab9", size = 1157114, upload-time = "2024-09-12T11:38:08.353Z" },
+    { url = "https://files.pythonhosted.org/packages/84/cc/3a5edfac9b946ab48f8ee3c29f8ef5f9f20851e16e1f0c5a323d23a460fe/pygeodiff-2.0.4-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:414ed93f6d4c4326f4145c6c3155019ad53f1deced789623a47c4cfa4e5678fc", size = 1064493, upload-time = "2024-09-12T11:38:09.706Z" },
+    { url = "https://files.pythonhosted.org/packages/cc/e1/73cffa97e3506d12f56f5d9bbb2771f26f68dab9881c257b66cebe022784/pygeodiff-2.0.4-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:ec6da27e1af597f3f538b5d2b8ebb31d9640093ef60872149c3289b7a1860aa8", size = 1041120, upload-time = "2024-09-12T11:38:11.077Z" },
+    { url = "https://files.pythonhosted.org/packages/d8/dd/30de833ca10102e66185048b3b93baa7d42d7a06c25d1922750632abf901/pygeodiff-2.0.4-cp313-cp313-musllinux_1_2_i686.whl", hash = "sha256:c648d327b827342822d90a176da0d18c14a00a99f8fdc8e1211c108321682437", size = 2222871, upload-time = "2024-09-12T11:38:12.805Z" },
+    { url = "https://files.pythonhosted.org/packages/92/05/a57876c7e081a9bbbf0b5d6b72a97ef38c1ada4cccde7cc2af8b42cdeeaf/pygeodiff-2.0.4-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:4589a21b9bb28f0e258a19e13f4c3237f3c3d7cbb8fb8e7e73d4e04b5fdc3691", size = 2035465, upload-time = "2024-09-12T11:38:14.397Z" },
+    { url = "https://files.pythonhosted.org/packages/22/5f/0ce1ea647e5dbed3b8abaca2c127fdbb37d1308c22393bb76fb66a03e6fd/pygeodiff-2.0.4-cp313-cp313-win32.whl", hash = "sha256:d86207fb0d9212203bb6265b77b46ff5e32260e1e9c6f9441267a4e57a0dc4a7", size = 926988, upload-time = "2024-09-12T11:38:15.865Z" },
+    { url = "https://files.pythonhosted.org/packages/2e/49/251856a148e84c34db45a6c6eeb0e5fb6d7f314f7d17d0a7a39fcfeac07d/pygeodiff-2.0.4-cp313-cp313-win_amd64.whl", hash = "sha256:d1d77a2352067d15740ce90ae085f837d8938f66f6fbbdb089ceb4cb2f86b44b", size = 1128308, upload-time = "2024-09-12T11:38:17.878Z" },
+    { url = "https://files.pythonhosted.org/packages/a0/aa/e417ad612ca30b883a9c1c18ca80727bb48b4c3ebc5bf0700003c294cbb4/pygeodiff-2.0.4-pp310-pypy310_pp73-macosx_10_15_x86_64.whl", hash = "sha256:21c07abfc53b98c715912406987da80c89ca19ffb85c9130b34d229defe4522b", size = 1157943, upload-time = "2024-09-12T11:39:03.276Z" },
+    { url = "https://files.pythonhosted.org/packages/cb/98/6e0b9034e0ec9811e8a0e08ab0d99647e0636f4f193881908e669791bb5b/pygeodiff-2.0.4-pp310-pypy310_pp73-macosx_14_0_arm64.whl", hash = "sha256:11212b48ca11c967b3d04dca46dc290a1cc711fd87aaee071e2eee8e7e3182ae", size = 1049298, upload-time = "2024-09-12T11:39:04.636Z" },
+    { url = "https://files.pythonhosted.org/packages/ad/f3/a1e783c9e119a2d29c8c0bac6bec5e05fa7bbdd63227fd295be1e4aa5ff0/pygeodiff-2.0.4-pp310-pypy310_pp73-win_amd64.whl", hash = "sha256:e9597d3914cfdf05584ea2b4d5ad4c322ac3f5b1ffc06c92883f46bd20331cfd", size = 1148451, upload-time = "2024-09-12T11:39:06.121Z" },
 ]
 
 [[package]]

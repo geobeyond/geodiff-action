@@ -1,5 +1,5 @@
 name: "GeoDiff Action"
-description: "GitHub Action for geospatial file diff operations"
+description: "GitHub Action for comparing GeoPackage/SQLite files using pygeodiff"
 author: "francbartoli"
 branding:
   icon: "map"
@@ -7,14 +7,14 @@ branding:
 
 inputs:
   base_file:
-    description: "Path to the base geospatial file"
+    description: "Path to the base GeoPackage/SQLite file"
     required: true
   compare_file:
     description: "Path to the file to compare against base"
     required: true
   output_format:
-    description: "Output format for the diff result (json, geojson, summary)"
-    default: "geojson"
+    description: "Output format for the diff result (json, summary)"
+    default: "json"
   summary:
     description: "Add Summary to Job"
     default: "true"

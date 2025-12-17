@@ -16,7 +16,7 @@ base_file: str = core.get_input("base_file", True)
 core.info(f"base_file: \033[36;1m{base_file}")
 compare_file: str = core.get_input("compare_file", True)
 core.info(f"compare_file: \033[36;1m{compare_file}")
-output_format: str = core.get_input("output_format") or "geojson"
+output_format: str = core.get_input("output_format") or "json"
 core.info(f"output_format: \033[35;1m{output_format}")
 summary: bool = core.get_bool("summary")
 core.info(f"summary: \033[33;1m{summary}")
@@ -48,7 +48,7 @@ core.info(f"repository.html_url: {html_url}")
 
 # Action Logic
 
-core.info("Performing geospatial diff...")
+core.info("Performing geospatial diff using pygeodiff...")
 
 try:
     diff_result = compute_diff(base_file, compare_file)
@@ -80,10 +80,10 @@ if summary:
     inputs_table.append("</table>")
 
     results_table = ["<table><tr><th>Change Type</th><th>Count</th></tr>"]
-    results_table.append(f"<tr><td>Added</td><td>{diff_summary['added_count']}</td></tr>")
-    results_table.append(f"<tr><td>Removed</td><td>{diff_summary['removed_count']}</td></tr>")
-    results_table.append(f"<tr><td>Modified</td><td>{diff_summary['modified_count']}</td></tr>")
-    results_table.append(f"<tr><td>Unchanged</td><td>{diff_summary['unchanged_count']}</td></tr>")
+    results_table.append(f"<tr><td>Total Changes</td><td>{diff_summary['total_changes']}</td></tr>")
+    results_table.append(f"<tr><td>Inserts</td><td>{diff_summary['inserts']}</td></tr>")
+    results_table.append(f"<tr><td>Updates</td><td>{diff_summary['updates']}</td></tr>")
+    results_table.append(f"<tr><td>Deletes</td><td>{diff_summary['deletes']}</td></tr>")
     results_table.append("</table>")
 
     core.summary("### GeoDiff Action Results")

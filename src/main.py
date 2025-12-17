@@ -60,7 +60,7 @@ try:
 
 except GeoDiffError as e:
     core.set_failed(f"GeoDiff error: {e}")
-    raise SystemExit(1)
+    raise SystemExit(1) from e
 
 
 # Outputs

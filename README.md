@@ -1,6 +1,8 @@
 # GeoDiff Action
 
-A GitHub Action for comparing GeoPackage and SQLite database files using [pygeodiff](https://github.com/MerginMaps/geodiff).
+> Compare GeoPackage and SQLite files in your CI/CD pipeline with detailed change detection
+
+A GitHub Action for comparing GeoPackage and SQLite database files using [pygeodiff](https://github.com/MerginMaps/geodiff). Automatically detect insertions, updates, and deletions in your geospatial data during pull requests or CI workflows. Get structured JSON or human-readable summaries of all changes across tables, with full integration into GitHub Actions job summaries.
 
 ## Features
 

@@ -38,8 +38,7 @@ def validate_file(file_path: str) -> Path:
 
     if path.suffix.lower() not in SUPPORTED_EXTENSIONS:
         raise GeoDiffError(
-            f"Unsupported file format: {path.suffix}. "
-            f"Supported formats: {', '.join(SUPPORTED_EXTENSIONS)}"
+            f"Unsupported file format: {path.suffix}. Supported formats: {', '.join(SUPPORTED_EXTENSIONS)}"
         )
 
     return path
@@ -69,7 +68,7 @@ def create_changeset(base_file: str, compare_file: str) -> tuple[str, Path]:
         geodiff = pygeodiff.GeoDiff()
         geodiff.create_changeset(base_file, compare_file, str(changeset_path))
     except pygeodiff.GeoDiffLibError as e:
-        raise GeoDiffError(f"Failed to create changeset: {e}")
+        raise GeoDiffError(f"Failed to create changeset: {e}") from e
 
     return str(changeset_path), temp_dir
 
@@ -107,9 +106,9 @@ def list_changes_json(changeset_path: str) -> dict[str, Any]:
         return changes
 
     except pygeodiff.GeoDiffLibError as e:
-        raise GeoDiffError(f"Failed to list changes: {e}")
+        raise GeoDiffError(f"Failed to list changes: {e}") from e
     except json.JSONDecodeError as e:
-        raise GeoDiffError(f"Failed to parse changes JSON: {e}")
+        raise GeoDiffError(f"Failed to parse changes JSON: {e}") from e
     finally:
         # Cleanup temp file
         if json_path.exists():

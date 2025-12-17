@@ -3,8 +3,12 @@ name: "Lint"
 on:
   workflow_dispatch:
   push:
-#    branches: [master]
-#  pull_request:
+    branches: ["**"]
+    paths:
+      - ".github/workflows/lint.yaml"
+      - "src/**"
+      - "tests/**"
+      - "pyproject.toml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -21,121 +25,39 @@ jobs:
 
     steps:
       - name: "Checkout"
-        uses: actions/checkout@v6
-
-      - name: "Debug event.json"
-        continue-on-error: true
-        run: cat "${GITHUB_EVENT_PATH}"
-
-      - name: "Debug CTX github"
-        continue-on-error: true
-        env:
-          GITHUB_CTX: ${{ toJSON(github) }}
-        run: echo "$GITHUB_CTX"
-
-      - name: "Debug Environment"
-        continue-on-error: true
-        run: env
+        uses: actions/checkout@v4
 
       - name: "Install UV"
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v4
 
-      - name: "Install Python 3.13"
-        run: |
-          uv python install 3.13
+      - name: "Install Python 3.12"
+        run: uv python install 3.12
 
       - name: "Install Project"
-        run: |
-          uv sync --locked --all-extras --dev
+        run: uv sync --group dev
 
-      - name: "Debug"
-        if: ${{ !github.event.act }}
-        continue-on-error: true
-        run: |
-          uv run python -V
-          uv python dir
-          echo "::group::uv pip list"
-          uv pip list
-          echo "::endgroup::"
-          echo "::group::uv tree"
-          uv tree
-          echo "::endgroup::"
-
-      - name: "astral-sh/ruff"
+      - name: "Ruff check"
         if: ${{ !cancelled() }}
-        uses: astral-sh/ruff-action@v3
-        with:
-          version: latest
+        run: uv run ruff check src/ tests/
 
-      - name: "astral-sh/ty"
+      - name: "Ruff format check"
         if: ${{ !cancelled() }}
-        run: |
-          uv run ty check -v
+        run: uv run ruff format --check src/ tests/
 
-      - name: "psf/black"
+      - name: "ty"
         if: ${{ !cancelled() }}
-        uses: psf/black@stable
+        run: uv run ty check src/
 
-      - name: "isort"
+      - name: "Bandit security check"
         if: ${{ !cancelled() }}
-        uses: isort/isort-action@v1
-
-      - name: "mypy"
-        if: ${{ !cancelled() }}
-        run: |
-          uv run mypy src
-
-      - name: "bandit"
-        if: ${{ !cancelled() }}
-        run: |
-          uv run bandit -c pyproject.toml -r src
+        run: uv run bandit -c pyproject.toml -r src/
 
       - name: "tombi"
         if: ${{ !cancelled() }}
-        run: |
-          uv run tombi lint
-
-      - name: "prettier"
-        if: ${{ !cancelled() }}
-        run: |
-          echo "::group::Install"
-          npm install prettier
-          echo "::endgroup::"
-          npx prettier --check .
-
-      - name: "yamllint"
-        if: ${{ !cancelled() }}
-        env:
-          CONFIG: "{extends: relaxed, ignore: [node_modules/], rules: {line-length: {max: 119}}}"
-        run: |
-          echo "::group::List Files"
-          yamllint -d '${{ env.CONFIG }}' --list-files .
-          echo "::endgroup::"
-          yamllint -d '${{ env.CONFIG }}' .
-
-      - name: "actionlint"
-        if: ${{ !cancelled() }}
-        uses: cssnr/actionlint-action@master
+        run: uv run tombi lint
 
       - name: "hadolint"
         if: ${{ !cancelled() }}
         uses: hadolint/hadolint-action@v3.3.0
         with:
           dockerfile: Dockerfile
-
-      #- name: "ShellCheck"
-      #  if: ${{ !cancelled() }}
-      #  uses: ludeeus/action-shellcheck@master
-      #  env:
-      #    SHELLCHECK_OPTS: -x
-      #  with:
-      #    scandir: src
-
-      #- name: "Vale"
-      #  if: ${{ !cancelled() }}
-      #  uses: errata-ai/vale-action@v2.1.1
-
-      #- name: "SonarQube"
-      #  uses: SonarSource/sonarqube-scan-action@v4
-      #  env:
-      #    SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

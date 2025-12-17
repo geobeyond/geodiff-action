@@ -1,10 +1,11 @@
 """Tests for src/functions.py"""
 
-import subprocess
+import subprocess  # noqa: F401
 
 import pytest
 
 import sys
+
 sys.path.insert(0, "src")
 
 from functions import check_output
@@ -47,7 +48,7 @@ class TestCheckOutput:
 
     def test_check_output_invalid_command_throws(self):
         """Test that invalid command raises exception when throw=True."""
-        with pytest.raises(Exception):
+        with pytest.raises((subprocess.CalledProcessError, FileNotFoundError)):
             check_output("nonexistent_command_xyz", throw=True)
 
     def test_check_output_strips_whitespace(self):

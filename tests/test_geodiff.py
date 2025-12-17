@@ -1,13 +1,13 @@
 """Tests for src/geodiff.py using GeoPackage files."""
 
 import json
-import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch, mock_open
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 import sys
+
 sys.path.insert(0, "src")
 
 from geodiff import (
@@ -24,6 +24,7 @@ from geodiff import (
 
 
 # Tests for validate_file
+
 
 class TestValidateFile:
     """Tests for the validate_file function."""
@@ -54,6 +55,7 @@ class TestValidateFile:
 
 
 # Tests for create_changeset
+
 
 class TestCreateChangeset:
     """Tests for the create_changeset function."""
@@ -94,6 +96,7 @@ class TestCreateChangeset:
 
 # Tests for has_changes
 
+
 class TestHasChanges:
     """Tests for the has_changes function."""
 
@@ -122,6 +125,7 @@ class TestHasChanges:
 
 # Tests for count_changes
 
+
 class TestCountChanges:
     """Tests for the count_changes function."""
 
@@ -149,6 +153,7 @@ class TestCountChanges:
 
 
 # Tests for compute_diff
+
 
 class TestComputeDiff:
     """Tests for the compute_diff function."""
@@ -217,6 +222,7 @@ class TestComputeDiff:
 
 # Tests for format_output
 
+
 class TestFormatOutput:
     """Tests for the format_output function."""
 
@@ -279,6 +285,7 @@ class TestFormatOutput:
 
 # Tests for list_changes_json
 
+
 class TestListChangesJson:
     """Tests for the list_changes_json function."""
 
@@ -329,7 +336,7 @@ class TestListChangesJson:
             if "changes.json" in str(path) and "r" in str(args):
                 return MagicMock(
                     __enter__=lambda s: MagicMock(read=lambda: "not valid json {", strip=lambda: "not valid json {"),
-                    __exit__=lambda s, *a: None
+                    __exit__=lambda s, *a: None,
                 )
             return original_open(path, *args, **kwargs)
 
@@ -361,6 +368,7 @@ class TestListChangesJson:
 
 
 # Tests for error handling
+
 
 class TestErrorHandling:
     """Tests for error handling in various functions."""
@@ -416,6 +424,7 @@ class TestErrorHandling:
 
 # Tests for parsing change types
 
+
 class TestParseChangeTypes:
     """Tests for verifying change type parsing in compute_diff."""
 
@@ -429,7 +438,7 @@ class TestParseChangeTypes:
                     "changes": [
                         {"type": "insert", "values": {}},
                         {"type": "insert", "values": {}},
-                    ]
+                    ],
                 }
             ]
         }
@@ -451,7 +460,7 @@ class TestParseChangeTypes:
                     "table": "test_layer",
                     "changes": [
                         {"type": "update", "values": {}},
-                    ]
+                    ],
                 }
             ]
         }
@@ -474,7 +483,7 @@ class TestParseChangeTypes:
                         {"type": "delete", "values": {}},
                         {"type": "delete", "values": {}},
                         {"type": "delete", "values": {}},
-                    ]
+                    ],
                 }
             ]
         }
@@ -496,15 +505,15 @@ class TestParseChangeTypes:
                     "changes": [
                         {"type": "insert"},
                         {"type": "update"},
-                    ]
+                    ],
                 },
                 {
                     "table": "layer2",
                     "changes": [
                         {"type": "delete"},
                         {"type": "insert"},
-                    ]
-                }
+                    ],
+                },
             ]
         }
 
@@ -535,7 +544,7 @@ class TestParseChangeTypes:
                     "changes": [
                         {"type": "unknown_operation"},
                         {"type": "insert"},
-                    ]
+                    ],
                 }
             ]
         }
@@ -561,6 +570,7 @@ class TestParseChangeTypes:
 
 
 # Tests for change type counting
+
 
 class TestChangeTypeCounting:
     """Tests for verifying change type counting in compute_diff."""
@@ -627,7 +637,7 @@ class TestChangeTypeCounting:
                         {"type": "insert"},
                         {"type": "update"},
                         {"type": "delete"},
-                    ]
+                    ],
                 }
             ]
         }
@@ -644,6 +654,7 @@ class TestChangeTypeCounting:
 
 # Tests for format_output with table details
 
+
 class TestFormatOutputTableDetails:
     """Tests for format_output with table details in summary."""
 
@@ -658,7 +669,7 @@ class TestFormatOutputTableDetails:
 
     def test_summary_shows_table_names(self, base_gpkg, modified_gpkg):
         """Test that summary shows individual table names."""
-        result = compute_diff(base_gpkg, modified_gpkg)
+        _ = compute_diff(base_gpkg, modified_gpkg)
 
         # Manually construct a result with known table data
         result_with_tables = {
@@ -687,6 +698,7 @@ class TestFormatOutputTableDetails:
 
 
 # Integration tests
+
 
 class TestIntegration:
     """Integration tests for the full diff workflow."""

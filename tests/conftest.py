@@ -2,6 +2,7 @@
 
 import shutil
 import sqlite3
+import struct
 import tempfile
 from pathlib import Path
 
@@ -17,14 +18,57 @@ def temp_dir():
     shutil.rmtree(tmpdir, ignore_errors=True)
 
 
-def create_geopackage(filepath: str, table_name: str = "test_layer", features: list[dict] | None = None) -> str:
+def create_gpkg_point_geometry(lon: float, lat: float, srs_id: int = 4326) -> bytes:
     """
-    Create a minimal GeoPackage file with a point layer.
+    Create a GeoPackage-compliant point geometry in WKB format.
+
+    Args:
+        lon: Longitude (X coordinate) in degrees.
+        lat: Latitude (Y coordinate) in degrees.
+        srs_id: Spatial Reference System ID (default: 4326 for WGS84).
+
+    Returns:
+        Binary GeoPackage geometry (GP header + WKB).
+    """
+    # GeoPackage binary header
+    # Magic number: 'GP' (0x4750)
+    # Version: 0
+    # Flags: 0x01 (little-endian WKB, no envelope)
+    # SRS ID: 4 bytes
+    gp_header = b"GP"
+    gp_header += struct.pack("<bb", 0, 1)  # Version 0, flags
+    gp_header += struct.pack("<i", srs_id)  # SRS ID
+
+    # WKB Point geometry (little-endian)
+    # Byte order: 1 (little-endian)
+    # Geometry type: 1 (Point)
+    # X coordinate: 8 bytes double
+    # Y coordinate: 8 bytes double
+    wkb = struct.pack("<bI", 1, 1)  # Little-endian, Point type
+    wkb += struct.pack("<dd", lon, lat)  # X (lon), Y (lat)
+
+    return gp_header + wkb
+
+
+def create_geopackage(
+    filepath: str,
+    table_name: str = "locations",
+    features: list[dict] | None = None,
+    description: str = "Test GeoPackage",
+) -> str:
+    """
+    Create a GeoPackage file with point features representing real geographic locations.
 
     Args:
         filepath: Path where to create the GeoPackage.
-        table_name: Name of the layer/table.
-        features: List of feature dicts with 'id', 'name', 'x', 'y' keys.
+        table_name: Name of the feature table.
+        features: List of feature dicts with keys:
+            - id: Feature ID (optional, auto-generated if not provided)
+            - name: Location name
+            - lon: Longitude in degrees
+            - lat: Latitude in degrees
+            - description: Optional description
+        description: Description for the GeoPackage contents.
 
     Returns:
         Path to the created GeoPackage.
@@ -35,9 +79,9 @@ def create_geopackage(filepath: str, table_name: str = "test_layer", features: l
     conn = sqlite3.connect(filepath)
     cursor = conn.cursor()
 
-    # Create GeoPackage metadata tables
+    # Create GeoPackage required metadata tables (OGC GeoPackage spec)
     cursor.executescript("""
-        -- GeoPackage required tables
+        -- Spatial Reference Systems table
         CREATE TABLE IF NOT EXISTS gpkg_spatial_ref_sys (
             srs_name TEXT NOT NULL,
             srs_id INTEGER NOT NULL PRIMARY KEY,
@@ -47,6 +91,7 @@ def create_geopackage(filepath: str, table_name: str = "test_layer", features: l
             description TEXT
         );
 
+        -- Contents table (registry of all tables)
         CREATE TABLE IF NOT EXISTS gpkg_contents (
             table_name TEXT NOT NULL PRIMARY KEY,
             data_type TEXT NOT NULL,
@@ -61,6 +106,7 @@ def create_geopackage(filepath: str, table_name: str = "test_layer", features: l
             CONSTRAINT fk_gc_r_srs_id FOREIGN KEY (srs_id) REFERENCES gpkg_spatial_ref_sys(srs_id)
         );
 
+        -- Geometry columns table
         CREATE TABLE IF NOT EXISTS gpkg_geometry_columns (
             table_name TEXT NOT NULL,
             column_name TEXT NOT NULL,
@@ -73,64 +119,87 @@ def create_geopackage(filepath: str, table_name: str = "test_layer", features: l
             CONSTRAINT fk_gc_srs FOREIGN KEY (srs_id) REFERENCES gpkg_spatial_ref_sys(srs_id)
         );
 
-        -- Insert WGS84 spatial reference system
+        -- Insert WGS84 spatial reference system (EPSG:4326)
+        INSERT OR IGNORE INTO gpkg_spatial_ref_sys (srs_name, srs_id, organization, organization_coordsys_id, definition, description)
+        VALUES (
+            'WGS 84 geodetic',
+            4326,
+            'EPSG',
+            4326,
+            'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]',
+            'longitude/latitude coordinates in decimal degrees on the WGS 84 spheroid'
+        );
+
+        -- Insert undefined Cartesian SRS
         INSERT OR IGNORE INTO gpkg_spatial_ref_sys (srs_name, srs_id, organization, organization_coordsys_id, definition)
-        VALUES ('WGS 84', 4326, 'EPSG', 4326,
-            'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]]');
+        VALUES ('Undefined cartesian SRS', -1, 'NONE', -1, 'undefined');
+
+        -- Insert undefined geographic SRS
+        INSERT OR IGNORE INTO gpkg_spatial_ref_sys (srs_name, srs_id, organization, organization_coordsys_id, definition)
+        VALUES ('Undefined geographic SRS', 0, 'NONE', 0, 'undefined');
     """)
 
-    # Create the feature table
+    # Create the feature table with geographic attributes
     cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
             fid INTEGER PRIMARY KEY AUTOINCREMENT,
             geom BLOB,
-            name TEXT
+            name TEXT NOT NULL,
+            description TEXT,
+            population INTEGER,
+            elevation_m REAL
         )
     """)
 
+    # Calculate bounding box from features
+    if features:
+        min_x = min(f.get("lon", 0) for f in features)
+        max_x = max(f.get("lon", 0) for f in features)
+        min_y = min(f.get("lat", 0) for f in features)
+        max_y = max(f.get("lat", 0) for f in features)
+    else:
+        min_x = max_x = min_y = max_y = None
+
     # Register in gpkg_contents
-    cursor.execute(f"""
-        INSERT OR REPLACE INTO gpkg_contents (table_name, data_type, identifier, srs_id)
-        VALUES ('{table_name}', 'features', '{table_name}', 4326)
-    """)
+    cursor.execute(
+        """
+        INSERT OR REPLACE INTO gpkg_contents (table_name, data_type, identifier, description, srs_id, min_x, min_y, max_x, max_y)
+        VALUES (?, 'features', ?, ?, 4326, ?, ?, ?, ?)
+        """,
+        (table_name, table_name, description, min_x, min_y, max_x, max_y),
+    )
 
     # Register in gpkg_geometry_columns
-    cursor.execute(f"""
+    cursor.execute(
+        """
         INSERT OR REPLACE INTO gpkg_geometry_columns (table_name, column_name, geometry_type_name, srs_id, z, m)
-        VALUES ('{table_name}', 'geom', 'POINT', 4326, 0, 0)
-    """)
+        VALUES (?, 'geom', 'POINT', 4326, 0, 0)
+        """,
+        (table_name,),
+    )
 
-    # Insert features
+    # Insert features with real geographic data
     for feature in features:
         fid = feature.get("id")
-        name = feature.get("name", "")
-        x = feature.get("x", 0)
-        y = feature.get("y", 0)
+        name = feature.get("name", "Unknown")
+        lon = feature.get("lon", 0.0)
+        lat = feature.get("lat", 0.0)
+        desc = feature.get("description", "")
+        population = feature.get("population")
+        elevation = feature.get("elevation_m")
 
-        # Create a simple WKB point geometry (little-endian)
-        # WKB format: byte order (1) + type (1=point, 4 bytes) + x (8 bytes) + y (8 bytes)
-        import struct
-
-        wkb = struct.pack("<bI", 1, 1)  # Little-endian, Point type
-        wkb += struct.pack("<dd", x, y)  # x, y coordinates
-
-        # GeoPackage uses GP header + WKB
-        # GP header: 'GP' (2 bytes) + version (1 byte) + flags (1 byte) + srs_id (4 bytes) + envelope (optional)
-        gp_header = b"GP"  # Magic
-        gp_header += struct.pack("<bb", 0, 1)  # Version 0, flags (little-endian WKB, no envelope)
-        gp_header += struct.pack("<i", 4326)  # SRS ID
-
-        gpkg_geom = gp_header + wkb
+        # Create GeoPackage point geometry
+        gpkg_geom = create_gpkg_point_geometry(lon, lat)
 
         if fid is not None:
             cursor.execute(
-                f"INSERT INTO {table_name} (fid, geom, name) VALUES (?, ?, ?)",
-                (fid, gpkg_geom, name),
+                f"INSERT INTO {table_name} (fid, geom, name, description, population, elevation_m) VALUES (?, ?, ?, ?, ?, ?)",
+                (fid, gpkg_geom, name, desc, population, elevation),
             )
         else:
             cursor.execute(
-                f"INSERT INTO {table_name} (geom, name) VALUES (?, ?)",
-                (gpkg_geom, name),
+                f"INSERT INTO {table_name} (geom, name, description, population, elevation_m) VALUES (?, ?, ?, ?, ?)",
+                (gpkg_geom, name, desc, population, elevation),
             )
 
     conn.commit()
@@ -139,45 +208,235 @@ def create_geopackage(filepath: str, table_name: str = "test_layer", features: l
     return filepath
 
 
+# Sample geographic data: Italian cities
+ITALIAN_CITIES_BASE = [
+    {
+        "id": 1,
+        "name": "Roma",
+        "lon": 12.4964,
+        "lat": 41.9028,
+        "description": "Capital of Italy",
+        "population": 2870500,
+        "elevation_m": 21.0,
+    },
+    {
+        "id": 2,
+        "name": "Milano",
+        "lon": 9.1900,
+        "lat": 45.4642,
+        "description": "Financial capital of Italy",
+        "population": 1396059,
+        "elevation_m": 120.0,
+    },
+    {
+        "id": 3,
+        "name": "Napoli",
+        "lon": 14.2681,
+        "lat": 40.8518,
+        "description": "Major city in southern Italy",
+        "population": 967068,
+        "elevation_m": 17.0,
+    },
+    {
+        "id": 4,
+        "name": "Torino",
+        "lon": 7.6869,
+        "lat": 45.0703,
+        "description": "Industrial city in northern Italy",
+        "population": 870952,
+        "elevation_m": 239.0,
+    },
+    {
+        "id": 5,
+        "name": "Firenze",
+        "lon": 11.2558,
+        "lat": 43.7696,
+        "description": "Renaissance art capital",
+        "population": 382808,
+        "elevation_m": 50.0,
+    },
+]
+
+# Modified version: updated, deleted, and new cities
+ITALIAN_CITIES_MODIFIED = [
+    {
+        "id": 1,
+        "name": "Roma",
+        "lon": 12.4964,
+        "lat": 41.9028,
+        "description": "Capital of Italy - Updated 2024",  # Updated description
+        "population": 2873000,  # Updated population
+        "elevation_m": 21.0,
+    },
+    {
+        "id": 2,
+        "name": "Milano",
+        "lon": 9.1900,
+        "lat": 45.4642,
+        "description": "Financial capital of Italy",
+        "population": 1396059,
+        "elevation_m": 120.0,
+    },
+    # Napoli (id=3) removed
+    {
+        "id": 4,
+        "name": "Torino",
+        "lon": 7.6869,
+        "lat": 45.0703,
+        "description": "Industrial city in Piedmont",  # Updated description
+        "population": 875000,  # Updated population
+        "elevation_m": 239.0,
+    },
+    # Firenze (id=5) removed
+    # New cities added
+    {
+        "id": 6,
+        "name": "Bologna",
+        "lon": 11.3426,
+        "lat": 44.4949,
+        "description": "University city in Emilia-Romagna",
+        "population": 392203,
+        "elevation_m": 54.0,
+    },
+    {
+        "id": 7,
+        "name": "Venezia",
+        "lon": 12.3155,
+        "lat": 45.4408,
+        "description": "City of canals",
+        "population": 261905,
+        "elevation_m": 1.0,
+    },
+]
+
+
 @pytest.fixture
 def base_gpkg(temp_dir):
-    """Create a base GeoPackage with sample features."""
-    filepath = temp_dir / "base.gpkg"
-    features = [
-        {"id": 1, "name": "Point A", "x": 0.0, "y": 0.0},
-        {"id": 2, "name": "Point B", "x": 1.0, "y": 1.0},
-        {"id": 3, "name": "Point C", "x": 2.0, "y": 2.0},
-    ]
-    return create_geopackage(str(filepath), features=features)
+    """
+    Create a base GeoPackage with Italian cities.
+
+    Contains 5 cities: Roma, Milano, Napoli, Torino, Firenze
+    """
+    filepath = temp_dir / "italian_cities_base.gpkg"
+    return create_geopackage(
+        str(filepath),
+        table_name="cities",
+        features=ITALIAN_CITIES_BASE,
+        description="Italian cities dataset - Base version",
+    )
 
 
 @pytest.fixture
 def identical_gpkg(temp_dir):
-    """Create a GeoPackage identical to base."""
-    filepath = temp_dir / "identical.gpkg"
-    features = [
-        {"id": 1, "name": "Point A", "x": 0.0, "y": 0.0},
-        {"id": 2, "name": "Point B", "x": 1.0, "y": 1.0},
-        {"id": 3, "name": "Point C", "x": 2.0, "y": 2.0},
-    ]
-    return create_geopackage(str(filepath), features=features)
+    """
+    Create a GeoPackage identical to base for testing no-change scenarios.
+
+    Contains the same 5 cities as base_gpkg.
+    """
+    filepath = temp_dir / "italian_cities_identical.gpkg"
+    return create_geopackage(
+        str(filepath),
+        table_name="cities",
+        features=ITALIAN_CITIES_BASE,
+        description="Italian cities dataset - Identical copy",
+    )
 
 
 @pytest.fixture
 def modified_gpkg(temp_dir):
-    """Create a GeoPackage with modifications compared to base."""
-    filepath = temp_dir / "modified.gpkg"
-    features = [
-        {"id": 1, "name": "Point A Modified", "x": 0.0, "y": 0.0},  # Updated
-        {"id": 2, "name": "Point B", "x": 1.0, "y": 1.0},  # Unchanged
-        # Point C (id=3) removed
-        {"id": 4, "name": "Point D", "x": 3.0, "y": 3.0},  # Added
-    ]
-    return create_geopackage(str(filepath), features=features)
+    """
+    Create a GeoPackage with modifications for testing change detection.
+
+    Changes compared to base:
+    - Roma (id=1): Updated description and population
+    - Milano (id=2): Unchanged
+    - Napoli (id=3): Deleted
+    - Torino (id=4): Updated description and population
+    - Firenze (id=5): Deleted
+    - Bologna (id=6): Added
+    - Venezia (id=7): Added
+    """
+    filepath = temp_dir / "italian_cities_modified.gpkg"
+    return create_geopackage(
+        str(filepath),
+        table_name="cities",
+        features=ITALIAN_CITIES_MODIFIED,
+        description="Italian cities dataset - Modified version",
+    )
 
 
 @pytest.fixture
 def empty_gpkg(temp_dir):
-    """Create an empty GeoPackage (schema only, no features)."""
-    filepath = temp_dir / "empty.gpkg"
-    return create_geopackage(str(filepath), features=[])
+    """
+    Create an empty GeoPackage with schema only (no features).
+
+    Useful for testing insert-only and delete-only scenarios.
+    """
+    filepath = temp_dir / "italian_cities_empty.gpkg"
+    return create_geopackage(
+        str(filepath),
+        table_name="cities",
+        features=[],
+        description="Italian cities dataset - Empty",
+    )
+
+
+@pytest.fixture
+def single_feature_gpkg(temp_dir):
+    """Create a GeoPackage with a single feature for minimal testing."""
+    filepath = temp_dir / "single_city.gpkg"
+    return create_geopackage(
+        str(filepath),
+        table_name="cities",
+        features=[ITALIAN_CITIES_BASE[0]],  # Just Roma
+        description="Single city dataset",
+    )
+
+
+@pytest.fixture
+def large_gpkg(temp_dir):
+    """
+    Create a larger GeoPackage with more features for performance testing.
+
+    Contains 50 generated points across Italy.
+    """
+    import random
+
+    random.seed(42)  # Reproducible test data
+
+    # Generate points across Italy's approximate bounding box
+    # lon: 6.6 to 18.5, lat: 36.6 to 47.1
+    features = []
+    italian_regions = [
+        "Lombardia",
+        "Lazio",
+        "Campania",
+        "Sicilia",
+        "Veneto",
+        "Emilia-Romagna",
+        "Piemonte",
+        "Puglia",
+        "Toscana",
+        "Calabria",
+    ]
+
+    for i in range(1, 51):
+        features.append(
+            {
+                "id": i,
+                "name": f"Location_{i:03d}",
+                "lon": random.uniform(6.6, 18.5),
+                "lat": random.uniform(36.6, 47.1),
+                "description": f"Test location in {random.choice(italian_regions)}",
+                "population": random.randint(1000, 500000),
+                "elevation_m": random.uniform(0, 2000),
+            }
+        )
+
+    filepath = temp_dir / "large_dataset.gpkg"
+    return create_geopackage(
+        str(filepath),
+        table_name="locations",
+        features=features,
+        description="Large test dataset with 50 locations",
+    )

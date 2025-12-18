@@ -77,44 +77,59 @@ def list_changes_json(changeset_path: str) -> dict[str, Any]:
     """
     Export changes from a binary diff file to JSON format.
 
+    Uses read_changeset to iterate through changes and build a structured
+    representation compatible with the expected format.
+
     Args:
         changeset_path: Path to the changeset diff file.
 
     Returns:
-        Dictionary containing the changes.
+        Dictionary containing the changes in format:
+        {
+            "geodiff": [
+                {
+                    "table": "table_name",
+                    "changes": [{"type": "insert"}, {"type": "update"}, ...]
+                }
+            ]
+        }
 
     Raises:
         GeoDiffError: If listing changes fails.
     """
-    temp_dir = Path(tempfile.mkdtemp())
-    json_path = temp_dir / "changes.json"
-
     try:
         geodiff = pygeodiff.GeoDiff()
-        geodiff.list_changes(changeset_path, str(json_path))
+        reader = geodiff.read_changeset(changeset_path)
 
-        # Check if file was created
-        if not json_path.exists():
-            return {"geodiff": []}
+        # Group changes by table
+        tables_changes: dict[str, list[dict[str, str]]] = {}
 
-        with open(json_path, "r", encoding="utf-8") as f:
-            content = f.read().strip()
-            if not content:
-                return {"geodiff": []}
-            changes = json.loads(content)
+        for entry in reader:
+            table_name = entry.table.name
+            op = entry.operation
 
-        return changes
+            # Determine change type
+            if op == entry.OP_INSERT:
+                change_type = "insert"
+            elif op == entry.OP_UPDATE:
+                change_type = "update"
+            elif op == entry.OP_DELETE:
+                change_type = "delete"
+            else:
+                continue  # Skip unknown operations
+
+            if table_name not in tables_changes:
+                tables_changes[table_name] = []
+
+            tables_changes[table_name].append({"type": change_type})
+
+        # Build result in expected format
+        result = {"geodiff": [{"table": table, "changes": changes} for table, changes in tables_changes.items()]}
+
+        return result
 
     except pygeodiff.GeoDiffLibError as e:
         raise GeoDiffError(f"Failed to list changes: {e}") from e
-    except json.JSONDecodeError as e:
-        raise GeoDiffError(f"Failed to parse changes JSON: {e}") from e
-    finally:
-        # Cleanup temp file
-        if json_path.exists():
-            json_path.unlink()
-        if temp_dir.exists():
-            temp_dir.rmdir()
 
 
 def has_changes(changeset_path: str) -> bool:

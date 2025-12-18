@@ -1,8 +1,16 @@
-"""Tests for src/geodiff.py using GeoPackage files."""
+"""Tests for src/geodiff.py using GeoPackage files with realistic Italian cities data.
+
+The test fixtures use real geographic coordinates for Italian cities:
+- Base: Roma, Milano, Napoli, Torino, Firenze (5 cities)
+- Modified: Roma (updated), Milano, Torino (updated), Bologna (new), Venezia (new)
+  - Napoli and Firenze are deleted
+  - Roma and Torino have updated descriptions and population
+  - Bologna and Venezia are added
+"""
 
 import json
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -168,33 +176,48 @@ class TestComputeDiff:
         assert result["compare_file"] == identical_gpkg
 
     def test_diff_with_changes(self, base_gpkg, modified_gpkg):
-        """Test diff with actual changes."""
+        """Test diff with actual changes using Italian cities data.
+
+        Expected changes from base to modified:
+        - 2 updates: Roma (description + population), Torino (description + population)
+        - 2 deletes: Napoli, Firenze
+        - 2 inserts: Bologna, Venezia
+        """
         result = compute_diff(base_gpkg, modified_gpkg)
 
         assert result["has_changes"] is True
         assert result["summary"]["total_changes"] > 0
 
-        # Should have inserts, updates, and deletes based on our test data
+        # Should have inserts, updates, and deletes based on our Italian cities test data
         summary = result["summary"]
+        # We expect: 2 inserts (Bologna, Venezia), 2 updates (Roma, Torino), 2 deletes (Napoli, Firenze)
         assert summary["inserts"] >= 0
         assert summary["updates"] >= 0
         assert summary["deletes"] >= 0
 
     def test_diff_empty_to_populated(self, empty_gpkg, base_gpkg):
-        """Test diff from empty to populated file."""
+        """Test diff from empty to populated file (5 Italian cities inserted)."""
         result = compute_diff(empty_gpkg, base_gpkg)
 
         assert result["has_changes"] is True
-        # All features should be inserts
-        assert result["summary"]["inserts"] >= 0
+        # All 5 cities (Roma, Milano, Napoli, Torino, Firenze) should be inserts
+        summary = result["summary"]
+        assert summary["inserts"] == 5
+        assert summary["updates"] == 0
+        assert summary["deletes"] == 0
+        assert summary["total_changes"] == 5
 
     def test_diff_populated_to_empty(self, base_gpkg, empty_gpkg):
-        """Test diff from populated to empty file."""
+        """Test diff from populated to empty file (5 Italian cities deleted)."""
         result = compute_diff(base_gpkg, empty_gpkg)
 
         assert result["has_changes"] is True
-        # All features should be deletes
-        assert result["summary"]["deletes"] >= 0
+        # All 5 cities should be deletes
+        summary = result["summary"]
+        assert summary["inserts"] == 0
+        assert summary["updates"] == 0
+        assert summary["deletes"] == 5
+        assert summary["total_changes"] == 5
 
     def test_diff_nonexistent_file(self, base_gpkg):
         """Test diff with nonexistent file raises error."""
@@ -321,38 +344,15 @@ class TestListChangesJson:
         with pytest.raises(GeoDiffError, match="Failed to list changes"):
             list_changes_json("/nonexistent/changeset.diff")
 
-    def test_list_changes_json_decode_error(self, temp_dir):
-        """Test handling of JSON decode errors in list_changes_json."""
-        # Create a fake changeset file (just needs to exist for the test)
+    def test_list_changes_invalid_changeset_file(self, temp_dir):
+        """Test handling of invalid changeset file in list_changes_json."""
+        # Create a fake changeset file with invalid content
         fake_changeset = temp_dir / "fake.diff"
-        fake_changeset.write_bytes(b"")
+        fake_changeset.write_bytes(b"invalid binary content")
 
-        # Create mock that:
-        # 1. Lets list_changes succeed (creates json file)
-        # 2. Returns invalid JSON when reading
-        original_open = open
-
-        def mock_open_func(path, *args, **kwargs):
-            if "changes.json" in str(path) and "r" in str(args):
-                return MagicMock(
-                    __enter__=lambda s: MagicMock(read=lambda: "not valid json {", strip=lambda: "not valid json {"),
-                    __exit__=lambda s, *a: None,
-                )
-            return original_open(path, *args, **kwargs)
-
-        # Mock pygeodiff to not actually call the library
-        with patch("geodiff.pygeodiff.GeoDiff") as mock_geodiff:
-            mock_instance = MagicMock()
-            mock_geodiff.return_value = mock_instance
-
-            # Make list_changes create a fake json file with invalid content
-            def create_bad_json(changeset, json_path):
-                Path(json_path).write_text("not valid json {")
-
-            mock_instance.list_changes.side_effect = create_bad_json
-
-            with pytest.raises(GeoDiffError, match="Failed to parse changes JSON"):
-                list_changes_json(str(fake_changeset))
+        # Should raise GeoDiffError when pygeodiff can't read the invalid changeset
+        with pytest.raises(GeoDiffError, match="Failed to list changes"):
+            list_changes_json(str(fake_changeset))
 
     def test_list_changes_empty_file(self, base_gpkg, identical_gpkg):
         """Test list_changes with file that exists but is empty."""
@@ -569,41 +569,60 @@ class TestParseChangeTypes:
         assert delete_count == 0
 
 
-# Tests for change type counting
+# Tests for change type counting with Italian cities data
 
 
 class TestChangeTypeCounting:
-    """Tests for verifying change type counting in compute_diff."""
+    """Tests for verifying change type counting in compute_diff with Italian cities."""
 
     def test_count_inserts_only(self, empty_gpkg, base_gpkg):
-        """Test that inserts are counted correctly."""
+        """Test that inserts are counted correctly (5 Italian cities)."""
         result = compute_diff(empty_gpkg, base_gpkg)
 
         # When going from empty to populated, all should be inserts
         assert result["has_changes"] is True
         summary = result["summary"]
-        # Total changes should be positive
-        assert summary["total_changes"] > 0
+        # Exactly 5 cities: Roma, Milano, Napoli, Torino, Firenze
+        assert summary["total_changes"] == 5
+        assert summary["inserts"] == 5
+        assert summary["updates"] == 0
+        assert summary["deletes"] == 0
 
     def test_count_deletes_only(self, base_gpkg, empty_gpkg):
-        """Test that deletes are counted correctly."""
+        """Test that deletes are counted correctly (5 Italian cities)."""
         result = compute_diff(base_gpkg, empty_gpkg)
 
         # When going from populated to empty, all should be deletes
         assert result["has_changes"] is True
         summary = result["summary"]
-        assert summary["total_changes"] > 0
+        # Exactly 5 cities deleted
+        assert summary["total_changes"] == 5
+        assert summary["inserts"] == 0
+        assert summary["updates"] == 0
+        assert summary["deletes"] == 5
 
     def test_count_mixed_changes(self, base_gpkg, modified_gpkg):
-        """Test counting mixed changes (insert, update, delete)."""
+        """Test counting mixed changes with Italian cities.
+
+        Base cities: Roma, Milano, Napoli, Torino, Firenze (5 cities)
+        Modified: Roma*, Milano, Torino*, Bologna+, Venezia+ (5 cities)
+        * = updated, + = new
+
+        Expected changes:
+        - Inserts: 2 (Bologna, Venezia)
+        - Updates: 2 (Roma, Torino)
+        - Deletes: 2 (Napoli, Firenze)
+        """
         result = compute_diff(base_gpkg, modified_gpkg)
 
         assert result["has_changes"] is True
         summary = result["summary"]
 
-        # We should have some changes
-        total = summary["inserts"] + summary["updates"] + summary["deletes"]
-        assert total >= 0  # May not match total_changes exactly due to how pygeodiff counts
+        # Verify expected changes
+        assert summary["inserts"] == 2, f"Expected 2 inserts (Bologna, Venezia), got {summary['inserts']}"
+        assert summary["updates"] == 2, f"Expected 2 updates (Roma, Torino), got {summary['updates']}"
+        assert summary["deletes"] == 2, f"Expected 2 deletes (Napoli, Firenze), got {summary['deletes']}"
+        assert summary["total_changes"] == 6, f"Expected 6 total changes, got {summary['total_changes']}"
 
     def test_compute_diff_with_mocked_changes(self, temp_dir):
         """Test compute_diff with mocked pygeodiff returning specific change types."""
@@ -697,30 +716,144 @@ class TestFormatOutputTableDetails:
         assert "another_layer: 1 change(s)" in output
 
 
+# Tests for verifying specific changeset details with Italian cities
+
+
+class TestItalianCitiesChangesets:
+    """Tests verifying exact changeset details with Italian cities data."""
+
+    def test_changeset_contains_cities_table(self, base_gpkg, modified_gpkg):
+        """Test that changeset includes the 'cities' table."""
+        result = compute_diff(base_gpkg, modified_gpkg)
+
+        changes = result["changes"]
+        assert "geodiff" in changes
+        assert len(changes["geodiff"]) > 0
+
+        # Find the cities table in changes
+        cities_table = None
+        for table_change in changes["geodiff"]:
+            if table_change.get("table") == "cities":
+                cities_table = table_change
+                break
+
+        assert cities_table is not None, "Expected 'cities' table in changeset"
+        assert "changes" in cities_table
+
+    def test_changeset_detail_inserts(self, empty_gpkg, base_gpkg):
+        """Test that inserting 5 Italian cities produces correct changeset."""
+        result = compute_diff(empty_gpkg, base_gpkg)
+
+        changes = result["changes"]["geodiff"]
+        assert len(changes) > 0
+
+        # All changes should be inserts
+        total_inserts = 0
+        for table_change in changes:
+            for change in table_change.get("changes", []):
+                assert change.get("type") == "insert", f"Expected insert, got {change.get('type')}"
+                total_inserts += 1
+
+        assert total_inserts == 5, f"Expected 5 inserts, got {total_inserts}"
+
+    def test_changeset_detail_deletes(self, base_gpkg, empty_gpkg):
+        """Test that deleting 5 Italian cities produces correct changeset."""
+        result = compute_diff(base_gpkg, empty_gpkg)
+
+        changes = result["changes"]["geodiff"]
+        assert len(changes) > 0
+
+        # All changes should be deletes
+        total_deletes = 0
+        for table_change in changes:
+            for change in table_change.get("changes", []):
+                assert change.get("type") == "delete", f"Expected delete, got {change.get('type')}"
+                total_deletes += 1
+
+        assert total_deletes == 5, f"Expected 5 deletes, got {total_deletes}"
+
+    def test_changeset_detail_mixed_changes(self, base_gpkg, modified_gpkg):
+        """Test that mixed changes produce correct changeset types.
+
+        Expected:
+        - 2 inserts (Bologna, Venezia)
+        - 2 updates (Roma, Torino)
+        - 2 deletes (Napoli, Firenze)
+        """
+        result = compute_diff(base_gpkg, modified_gpkg)
+
+        changes = result["changes"]["geodiff"]
+        assert len(changes) > 0
+
+        # Count change types
+        inserts = 0
+        updates = 0
+        deletes = 0
+
+        for table_change in changes:
+            for change in table_change.get("changes", []):
+                change_type = change.get("type")
+                if change_type == "insert":
+                    inserts += 1
+                elif change_type == "update":
+                    updates += 1
+                elif change_type == "delete":
+                    deletes += 1
+
+        assert inserts == 2, f"Expected 2 inserts, got {inserts}"
+        assert updates == 2, f"Expected 2 updates, got {updates}"
+        assert deletes == 2, f"Expected 2 deletes, got {deletes}"
+
+    def test_single_city_insert(self, empty_gpkg, single_feature_gpkg):
+        """Test inserting a single city (Roma) produces exactly 1 insert."""
+        result = compute_diff(empty_gpkg, single_feature_gpkg)
+
+        assert result["has_changes"] is True
+        assert result["summary"]["total_changes"] == 1
+        assert result["summary"]["inserts"] == 1
+        assert result["summary"]["updates"] == 0
+        assert result["summary"]["deletes"] == 0
+
+    def test_single_city_delete(self, single_feature_gpkg, empty_gpkg):
+        """Test deleting a single city (Roma) produces exactly 1 delete."""
+        result = compute_diff(single_feature_gpkg, empty_gpkg)
+
+        assert result["has_changes"] is True
+        assert result["summary"]["total_changes"] == 1
+        assert result["summary"]["inserts"] == 0
+        assert result["summary"]["updates"] == 0
+        assert result["summary"]["deletes"] == 1
+
+
 # Integration tests
 
 
 class TestIntegration:
-    """Integration tests for the full diff workflow."""
+    """Integration tests for the full diff workflow with Italian cities."""
 
     def test_full_workflow(self, base_gpkg, modified_gpkg):
-        """Test the complete diff workflow."""
+        """Test the complete diff workflow with Italian cities."""
         # Compute diff
         result = compute_diff(base_gpkg, modified_gpkg)
 
         # Verify result
         assert result["has_changes"] is True
 
+        # Verify expected changes: 2 inserts, 2 updates, 2 deletes
+        assert result["summary"]["total_changes"] == 6
+
         # Format as JSON
         json_output = format_output(result, "json")
-        assert json.loads(json_output)
+        parsed = json.loads(json_output)
+        assert parsed["summary"]["total_changes"] == 6
 
         # Format as summary
         summary_output = format_output(result, "summary")
         assert "GeoDiff Summary" in summary_output
+        assert "cities:" in summary_output  # Should show the cities table
 
     def test_roundtrip_identical(self, base_gpkg, identical_gpkg):
-        """Test that identical files produce empty diff."""
+        """Test that identical Italian cities produce empty diff."""
         result = compute_diff(base_gpkg, identical_gpkg)
 
         assert result["has_changes"] is False

@@ -4,6 +4,9 @@ LABEL org.opencontainers.image.source="https://github.com/francbartoli/geodiff-a
 LABEL org.opencontainers.image.description="GeoDiff Action - GitHub Action for geospatial file diff operations"
 LABEL org.opencontainers.image.authors="francbartoli"
 
+# Install git for git history mode
+RUN apk add --no-cache git
+
 # Enable bytecode compilation
 ENV UV_COMPILE_BYTECODE=1
 # Copy from the cache instead of linking since it's a mounted volume

@@ -18,7 +18,7 @@ A GitHub Action for comparing GeoPackage and SQLite database files using [pygeod
 ### Compare two files
 
 ```yaml
-- uses: francbartoli/geodiff-action@v1
+- uses: geobeyond/geodiff-action@v1
   with:
     base_file: 'path/to/base.gpkg'
     compare_file: 'path/to/compare.gpkg'
@@ -34,7 +34,7 @@ When `compare_file` is not provided, the action automatically compares the curre
   with:
     fetch-depth: 2  # Need at least 2 commits for comparison
 
-- uses: francbartoli/geodiff-action@v1
+- uses: geobeyond/geodiff-action@v1
   with:
     base_file: 'data/spatial.gpkg'
     # compare_file omitted - will compare with previous commit
@@ -81,7 +81,7 @@ jobs:
 
       - name: Run GeoDiff
         id: geodiff
-        uses: francbartoli/geodiff-action@v1
+        uses: geobeyond/geodiff-action@v1
         with:
           base_file: 'base.gpkg'
           compare_file: 'data/spatial.gpkg'

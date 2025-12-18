@@ -1,8 +1,8 @@
 FROM ghcr.io/astral-sh/uv:python3.13-alpine
 
-LABEL org.opencontainers.image.source="https://github.com/francbartoli/geodiff-action"
+LABEL org.opencontainers.image.source="https://github.com/geobeyond/geodiff-action"
 LABEL org.opencontainers.image.description="GeoDiff Action - GitHub Action for geospatial file diff operations"
-LABEL org.opencontainers.image.authors="francbartoli"
+LABEL org.opencontainers.image.authors="Francesco Bartoli"
 
 # Install git for git history mode
 RUN apk add --no-cache git

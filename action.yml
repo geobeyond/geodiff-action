@@ -1,6 +1,6 @@
 name: "GeoDiff Action"
 description: "GitHub Action for comparing GeoPackage/SQLite files using pygeodiff"
-author: "francbartoli"
+author: "Francesco Bartoli"
 branding:
   icon: "map"
   color: "blue"

@@ -117,7 +117,10 @@ try:
             core.set_failed(f"Cannot get previous commit: {e}")
             raise SystemExit(1) from e
 
-        if not has_file_in_commit(repo_path, file_rel_path, prev_commit):
+        file_exists_in_prev = has_file_in_commit(repo_path, file_rel_path, prev_commit)
+        core.info(f"File exists in previous commit: {file_exists_in_prev}")
+
+        if not file_exists_in_prev:
             core.info(f"File {file_rel_path} does not exist in previous commit. This is a new file.")
             # Create empty result for new file
             diff_result = {
@@ -135,6 +138,7 @@ try:
             }
             has_changes = True
             formatted_output = format_output(diff_result, output_format)
+            core.info(f"New file: has_changes={has_changes}, diff_result keys={list(diff_result.keys())}")
 
             with core.group("Diff Result"):
                 core.info(formatted_output)
@@ -175,15 +179,19 @@ finally:
 
 
 # Outputs
+core.info(f"Setting outputs: has_changes={has_changes}, diff_result type={type(diff_result).__name__}")
 # For JSON output, use compact format to avoid multiline issues with GitHub Actions
 if output_format == "json":
     compact_output = json.dumps(diff_result)
     core.set_output("diff_result", compact_output)
+    core.info(f"Set diff_result output (json, length={len(compact_output)})")
 else:
     # For summary format, escape newlines
     escaped_output = formatted_output.replace("\n", "%0A")
     core.set_output("diff_result", escaped_output)
+    core.info(f"Set diff_result output (summary, length={len(escaped_output)})")
 core.set_output("has_changes", str(has_changes).lower())
+core.info(f"Set has_changes output: {str(has_changes).lower()}")
 
 
 # Summary

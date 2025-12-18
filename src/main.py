@@ -1,12 +1,11 @@
 import json
-import os
 from pathlib import Path
 
 from actions import context, core
 
 import functions
 from geodiff import GeoDiffError, compute_diff, format_output
-from git_utils import GitError, get_file_from_commit, get_previous_commit, has_file_in_commit, is_git_repo
+from git_utils import GitError, find_repo_root, get_file_from_commit, get_previous_commit, has_file_in_commit
 
 
 version: str = core.get_version()
@@ -74,15 +73,18 @@ try:
         # Git history mode: compare current file with previous commit
         core.info("Mode: comparing with previous git commit")
 
-        # Get the repository root (current working directory in GitHub Actions)
-        repo_path = os.getcwd()
+        # Find the repository root from the file's location
+        repo_path = find_repo_root(base_file)
 
-        if not is_git_repo(repo_path):
+        if repo_path is None:
             core.set_failed("Not a git repository. Cannot compare with previous commit.")
             raise SystemExit(1)
 
-        # The base_file path relative to repo
-        file_rel_path = base_file
+        core.info(f"Git repository root: {repo_path}")
+
+        # Calculate the file path relative to the repo root
+        abs_base_file = Path(base_file).resolve()
+        file_rel_path = str(abs_base_file.relative_to(repo_path))
 
         # Check if file exists in previous commit
         try:

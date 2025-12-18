@@ -33,6 +33,37 @@ def is_git_repo(path: str) -> bool:
         return False
 
 
+def find_repo_root(file_path: str) -> str | None:
+    """
+    Find the git repository root that contains the given file.
+
+    Args:
+        file_path: Path to a file (can be relative or absolute).
+
+    Returns:
+        Absolute path to the repository root, or None if not in a git repo.
+    """
+    # Resolve to absolute path and get the directory containing the file
+    abs_path = Path(file_path).resolve()
+    if abs_path.is_file():
+        search_dir = abs_path.parent
+    else:
+        search_dir = abs_path
+
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(search_dir), "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return result.stdout.strip()
+    except subprocess.CalledProcessError:
+        return None
+    except Exception:
+        return None
+
+
 def get_previous_commit(repo_path: str, offset: int = 1) -> str:
     """
     Get the commit hash of a previous commit.

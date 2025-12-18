@@ -11,6 +11,7 @@ sys.path.insert(0, "src")
 
 from git_utils import (
     GitError,
+    find_repo_root,
     get_file_from_commit,
     get_previous_commit,
     has_file_in_commit,
@@ -63,6 +64,47 @@ class TestIsGitRepo:
     def test_is_git_repo_nonexistent(self):
         """Test that nonexistent directory returns False."""
         assert is_git_repo("/nonexistent/path") is False
+
+
+class TestFindRepoRoot:
+    """Tests for find_repo_root function."""
+
+    def test_find_repo_root_from_file(self, git_repo):
+        """Test finding repo root from a file path."""
+        test_file = git_repo / "test.gpkg"
+        repo_root = find_repo_root(str(test_file))
+        assert repo_root == str(git_repo)
+
+    def test_find_repo_root_from_subdirectory_file(self, git_repo):
+        """Test finding repo root from a file in a subdirectory."""
+        subdir = git_repo / "data" / "subdir"
+        subdir.mkdir(parents=True)
+        test_file = subdir / "nested.gpkg"
+        test_file.write_text("content")
+
+        repo_root = find_repo_root(str(test_file))
+        assert repo_root == str(git_repo)
+
+    def test_find_repo_root_from_directory(self, git_repo):
+        """Test finding repo root from a directory path."""
+        subdir = git_repo / "data"
+        subdir.mkdir(exist_ok=True)
+
+        repo_root = find_repo_root(str(subdir))
+        assert repo_root == str(git_repo)
+
+    def test_find_repo_root_non_git(self, non_git_dir):
+        """Test that non-git directory returns None."""
+        test_file = non_git_dir / "test.txt"
+        test_file.write_text("content")
+
+        repo_root = find_repo_root(str(test_file))
+        assert repo_root is None
+
+    def test_find_repo_root_nonexistent(self):
+        """Test that nonexistent path returns None."""
+        repo_root = find_repo_root("/nonexistent/path/file.gpkg")
+        assert repo_root is None
 
 
 class TestGetPreviousCommit:

@@ -73,10 +73,25 @@ try:
         # Git history mode: compare current file with previous commit
         core.info("Mode: comparing with previous git commit")
 
+        # Debug: show current working directory and file info
+        import os
+        cwd = os.getcwd()
+        core.info(f"Current working directory: {cwd}")
+        abs_base = Path(base_file).resolve()
+        core.info(f"Absolute base_file path: {abs_base}")
+        core.info(f"File exists: {abs_base.exists()}")
+        core.info(f"Parent directory exists: {abs_base.parent.exists()}")
+
         # Find the repository root from the file's location
         repo_path = find_repo_root(base_file)
+        core.info(f"find_repo_root returned: {repo_path}")
 
         if repo_path is None:
+            # Additional debug info
+            core.info("Checking if cwd is git repo...")
+            from git_utils import is_git_repo
+            core.info(f"is_git_repo(cwd): {is_git_repo(cwd)}")
+            core.info(f"is_git_repo(parent): {is_git_repo(str(abs_base.parent))}")
             core.set_failed("Not a git repository. Cannot compare with previous commit.")
             raise SystemExit(1)
 

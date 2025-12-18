@@ -33,6 +33,15 @@ def is_git_repo(path: str) -> bool:
         return False
 
 
+def _mark_safe_directory(path: str) -> None:
+    """Mark a directory as safe for git operations (needed in containers)."""
+    subprocess.run(
+        ["git", "config", "--global", "--add", "safe.directory", path],
+        capture_output=True,
+        check=False,
+    )
+
+
 def find_repo_root(file_path: str) -> str | None:
     """
     Find the git repository root that contains the given file.
@@ -50,6 +59,9 @@ def find_repo_root(file_path: str) -> str | None:
     else:
         search_dir = abs_path
 
+    # Mark the directory as safe to avoid "dubious ownership" errors in containers
+    _mark_safe_directory(str(search_dir))
+
     try:
         result = subprocess.run(
             ["git", "-C", str(search_dir), "rev-parse", "--show-toplevel"],
@@ -57,7 +69,13 @@ def find_repo_root(file_path: str) -> str | None:
             text=True,
             check=True,
         )
-        return result.stdout.strip()
+        repo_root = result.stdout.strip()
+
+        # Also mark the repo root as safe
+        if repo_root:
+            _mark_safe_directory(repo_root)
+
+        return repo_root
     except subprocess.CalledProcessError:
         return None
     except Exception:
@@ -78,6 +96,8 @@ def get_previous_commit(repo_path: str, offset: int = 1) -> str:
     Raises:
         GitError: If not a git repository or no previous commit exists.
     """
+    _mark_safe_directory(repo_path)
+
     if not is_git_repo(repo_path):
         raise GitError(f"Not a git repository: {repo_path}")
 

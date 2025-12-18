@@ -80,3 +80,155 @@ jobs:
         run: |
           echo "diff_result: ${{ steps.test.outputs.diff_result }}"
           echo "has_changes: ${{ steps.test.outputs.has_changes }}"
+
+  test-git-history-mode:
+    name: "Test Git History Mode"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for git operations
+
+      - name: "Setup test repository with GeoPackage history"
+        run: |
+          # Create a subdirectory for our test (to avoid conflicts with action repo)
+          mkdir -p test-repo
+          cd test-repo
+
+          # Initialize a new git repo for testing
+          git init
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+
+          # Create initial GeoPackage with Italian cities (base version)
+          mkdir -p data
+          sqlite3 data/cities.gpkg <<'EOF'
+          CREATE TABLE gpkg_spatial_ref_sys (srs_name TEXT NOT NULL, srs_id INTEGER NOT NULL PRIMARY KEY, organization TEXT NOT NULL, organization_coordsys_id INTEGER NOT NULL, definition TEXT NOT NULL, description TEXT);
+          CREATE TABLE gpkg_contents (table_name TEXT NOT NULL PRIMARY KEY, data_type TEXT NOT NULL, identifier TEXT UNIQUE, description TEXT DEFAULT '', last_change DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')), min_x DOUBLE, min_y DOUBLE, max_x DOUBLE, max_y DOUBLE, srs_id INTEGER);
+          CREATE TABLE gpkg_geometry_columns (table_name TEXT NOT NULL, column_name TEXT NOT NULL, geometry_type_name TEXT NOT NULL, srs_id INTEGER NOT NULL, z TINYINT NOT NULL, m TINYINT NOT NULL, CONSTRAINT pk_geom_cols PRIMARY KEY (table_name, column_name));
+          INSERT INTO gpkg_spatial_ref_sys VALUES ('WGS 84', 4326, 'EPSG', 4326, 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]]', NULL);
+          CREATE TABLE cities (fid INTEGER PRIMARY KEY AUTOINCREMENT, geom BLOB, name TEXT, population INTEGER);
+          INSERT INTO gpkg_contents VALUES ('cities', 'features', 'cities', 'Italian cities', datetime('now'), NULL, NULL, NULL, NULL, 4326);
+          INSERT INTO gpkg_geometry_columns VALUES ('cities', 'geom', 'POINT', 4326, 0, 0);
+          -- Initial cities: Roma, Milano, Napoli
+          INSERT INTO cities (fid, name, population) VALUES (1, 'Roma', 2870500);
+          INSERT INTO cities (fid, name, population) VALUES (2, 'Milano', 1396059);
+          INSERT INTO cities (fid, name, population) VALUES (3, 'Napoli', 967068);
+          EOF
+
+          # Commit initial version
+          git add .
+          git commit -m "Initial commit with 3 Italian cities"
+
+          # Modify the GeoPackage: update Roma, delete Napoli, add Torino
+          sqlite3 data/cities.gpkg <<'EOF'
+          UPDATE cities SET population = 2873000 WHERE fid = 1;
+          DELETE FROM cities WHERE fid = 3;
+          INSERT INTO cities (fid, name, population) VALUES (4, 'Torino', 870952);
+          EOF
+
+          # Commit modified version
+          git add .
+          git commit -m "Update cities: modify Roma, remove Napoli, add Torino"
+
+          echo "Git log:"
+          git log --oneline
+
+          echo "Current cities in GeoPackage:"
+          sqlite3 data/cities.gpkg "SELECT * FROM cities;"
+
+      - name: "Test Git History Mode Action"
+        id: test-history
+        uses: ./
+        with:
+          base_file: "test-repo/data/cities.gpkg"
+          # compare_file is intentionally omitted to trigger git history mode
+          output_format: "json"
+          summary: ${{ !github.event.act }}
+
+      - name: "Verify Git History Mode Outputs"
+        run: |
+          echo "=== Git History Mode Test Results ==="
+          echo "diff_result: ${{ steps.test-history.outputs.diff_result }}"
+          echo "has_changes: ${{ steps.test-history.outputs.has_changes }}"
+
+          # Verify that changes were detected
+          if [ "${{ steps.test-history.outputs.has_changes }}" != "true" ]; then
+            echo "ERROR: Expected has_changes to be true"
+            exit 1
+          fi
+
+          echo "SUCCESS: Git history mode detected changes correctly"
+
+  test-git-history-new-file:
+    name: "Test Git History Mode (New File)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: "Setup test repository with new GeoPackage"
+        run: |
+          mkdir -p test-repo
+          cd test-repo
+
+          git init
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+
+          # First commit without GeoPackage
+          echo "# Test Repository" > README.md
+          git add .
+          git commit -m "Initial commit"
+
+          # Second commit with new GeoPackage
+          mkdir -p data
+          sqlite3 data/new_cities.gpkg <<'EOF'
+          CREATE TABLE gpkg_spatial_ref_sys (srs_name TEXT NOT NULL, srs_id INTEGER NOT NULL PRIMARY KEY, organization TEXT NOT NULL, organization_coordsys_id INTEGER NOT NULL, definition TEXT NOT NULL, description TEXT);
+          CREATE TABLE gpkg_contents (table_name TEXT NOT NULL PRIMARY KEY, data_type TEXT NOT NULL, identifier TEXT UNIQUE, description TEXT DEFAULT '', last_change DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')), min_x DOUBLE, min_y DOUBLE, max_x DOUBLE, max_y DOUBLE, srs_id INTEGER);
+          CREATE TABLE gpkg_geometry_columns (table_name TEXT NOT NULL, column_name TEXT NOT NULL, geometry_type_name TEXT NOT NULL, srs_id INTEGER NOT NULL, z TINYINT NOT NULL, m TINYINT NOT NULL, CONSTRAINT pk_geom_cols PRIMARY KEY (table_name, column_name));
+          INSERT INTO gpkg_spatial_ref_sys VALUES ('WGS 84', 4326, 'EPSG', 4326, 'GEOGCS["WGS 84"]', NULL);
+          CREATE TABLE cities (fid INTEGER PRIMARY KEY AUTOINCREMENT, geom BLOB, name TEXT);
+          INSERT INTO gpkg_contents VALUES ('cities', 'features', 'cities', '', datetime('now'), NULL, NULL, NULL, NULL, 4326);
+          INSERT INTO gpkg_geometry_columns VALUES ('cities', 'geom', 'POINT', 4326, 0, 0);
+          INSERT INTO cities (fid, name) VALUES (1, 'Bologna');
+          EOF
+
+          git add .
+          git commit -m "Add new GeoPackage"
+
+          echo "Git log:"
+          git log --oneline
+
+      - name: "Test Git History Mode with New File"
+        id: test-new-file
+        uses: ./
+        with:
+          base_file: "test-repo/data/new_cities.gpkg"
+          output_format: "json"
+          summary: ${{ !github.event.act }}
+
+      - name: "Verify New File Detection"
+        run: |
+          echo "=== New File Test Results ==="
+          echo "diff_result: ${{ steps.test-new-file.outputs.diff_result }}"
+          echo "has_changes: ${{ steps.test-new-file.outputs.has_changes }}"
+
+          # New file should be detected as having changes
+          if [ "${{ steps.test-new-file.outputs.has_changes }}" != "true" ]; then
+            echo "ERROR: Expected has_changes to be true for new file"
+            exit 1
+          fi
+
+          echo "SUCCESS: New file detected correctly"

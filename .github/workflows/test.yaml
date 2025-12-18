@@ -77,9 +77,12 @@ jobs:
           summary: ${{ !github.event.act }}
 
       - name: "Check Outputs"
+        env:
+          DIFF_RESULT: ${{ steps.test.outputs.diff_result }}
+          HAS_CHANGES: ${{ steps.test.outputs.has_changes }}
         run: |
-          echo "diff_result: ${{ steps.test.outputs.diff_result }}"
-          echo "has_changes: ${{ steps.test.outputs.has_changes }}"
+          echo "diff_result: $DIFF_RESULT"
+          echo "has_changes: $HAS_CHANGES"
 
   test-git-history-mode:
     name: "Test Git History Mode"
@@ -152,13 +155,16 @@ jobs:
           summary: ${{ !github.event.act }}
 
       - name: "Verify Git History Mode Outputs"
+        env:
+          DIFF_RESULT: ${{ steps.test-history.outputs.diff_result }}
+          HAS_CHANGES: ${{ steps.test-history.outputs.has_changes }}
         run: |
           echo "=== Git History Mode Test Results ==="
-          echo "diff_result: ${{ steps.test-history.outputs.diff_result }}"
-          echo "has_changes: ${{ steps.test-history.outputs.has_changes }}"
+          echo "diff_result: $DIFF_RESULT"
+          echo "has_changes: $HAS_CHANGES"
 
           # Verify that changes were detected
-          if [ "${{ steps.test-history.outputs.has_changes }}" != "true" ]; then
+          if [ "$HAS_CHANGES" != "true" ]; then
             echo "ERROR: Expected has_changes to be true"
             exit 1
           fi
@@ -220,13 +226,16 @@ jobs:
           summary: ${{ !github.event.act }}
 
       - name: "Verify New File Detection"
+        env:
+          DIFF_RESULT: ${{ steps.test-new-file.outputs.diff_result }}
+          HAS_CHANGES: ${{ steps.test-new-file.outputs.has_changes }}
         run: |
           echo "=== New File Test Results ==="
-          echo "diff_result: ${{ steps.test-new-file.outputs.diff_result }}"
-          echo "has_changes: ${{ steps.test-new-file.outputs.has_changes }}"
+          echo "diff_result: $DIFF_RESULT"
+          echo "has_changes: $HAS_CHANGES"
 
           # New file should be detected as having changes
-          if [ "${{ steps.test-new-file.outputs.has_changes }}" != "true" ]; then
+          if [ "$HAS_CHANGES" != "true" ]; then
             echo "ERROR: Expected has_changes to be true for new file"
             exit 1
           fi

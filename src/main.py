@@ -83,6 +83,7 @@ try:
 
         # Debug: show current working directory and file info
         import os
+
         cwd = os.getcwd()
         core.info(f"Current working directory: {cwd}")
         abs_base = Path(base_file).resolve()
@@ -98,6 +99,7 @@ try:
             # Additional debug info
             core.info("Checking if cwd is git repo...")
             from git_utils import is_git_repo
+
             core.info(f"is_git_repo(cwd): {is_git_repo(cwd)}")
             core.info(f"is_git_repo(parent): {is_git_repo(str(abs_base.parent))}")
             core.set_failed("Not a git repository. Cannot compare with previous commit.")
@@ -187,6 +189,7 @@ finally:
 
 # Outputs
 import os
+
 github_output = os.environ.get("GITHUB_OUTPUT", "NOT SET")
 core.info(f"GITHUB_OUTPUT env var: {github_output}")
 core.info(f"Setting outputs: has_changes={has_changes}, diff_result type={type(diff_result).__name__}")

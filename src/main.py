@@ -1,3 +1,4 @@
+import os
 import json
 import subprocess
 from pathlib import Path
@@ -188,8 +189,6 @@ finally:
 
 
 # Outputs
-import os
-
 github_output = os.environ.get("GITHUB_OUTPUT", "NOT SET")
 core.info(f"GITHUB_OUTPUT env var: {github_output}")
 core.info(f"Setting outputs: has_changes={has_changes}, diff_result type={type(diff_result).__name__}")

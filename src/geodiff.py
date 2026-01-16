@@ -69,7 +69,7 @@ def create_changeset(base_file: str, compare_file: str) -> tuple[str, Path]:
         geodiff.create_changeset(base_file, compare_file, str(changeset_path))
     except pygeodiff.GeoDiffLibError as e:
         err = str(e).replace("\n", " ").replace("\r", " ")
-        raise GeoDiffError(f"Failed to create changeset: {err}")
+        raise GeoDiffError(f"Failed to create changeset: {err}") from e
 
     return str(changeset_path), temp_dir
 

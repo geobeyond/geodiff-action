@@ -89,8 +89,6 @@ try:
         core.info("Mode: comparing with previous git commit")
 
         # Debug: show current working directory and file info
-        import os
-
         cwd = os.getcwd()
         core.info(f"Current working directory: {cwd}")
         abs_base = Path(base_file).resolve()
